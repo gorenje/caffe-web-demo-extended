@@ -1,13 +1,16 @@
 # Extend Web demo from Caffe
 
-A simple extension of the [caffe](repo/caffe/examples/)
-[web demo](https://github.com/BVLC/caffe/tree/master/examples/web_demo)
+A simple extension of the [Caffe](https://github.com/BVLC/caffe)
+web web [demo](https://github.com/BVLC/caffe/tree/master/examples/web_demo)
 to include other classification models.
 
-It differs to [the original demo](http://demo.caffe.berkeleyvision.org/) in
-that it classifies the same image over several trained models.
+It differs from the original [demo](http://demo.caffe.berkeleyvision.org/)
+in that, the classification of the image is done over multiple models.
 
-## Running this
+Models that are included can be viewed in the
+[Dockerfile](blob/master/Dockerfile).
+
+## Running locally
 
 The simplest thing to get this running:
 
@@ -15,9 +18,6 @@ The simplest thing to get this running:
     docker-compose -f docker-compose.yml up
 
 Then using your favourite browser, open http://localhost:5123
-
-You might want to reload since the web servers takes a few seconds to
-start since the models are initialised at start time.
 
 ## NOTES
 
