@@ -30,10 +30,10 @@
 
     <title>Caffe Demos</title>
 
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 
-    <script type="text/javascript" src="//code.jquery.com/jquery-2.1.1.js"></script>
-    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 
     <!-- Script to instantly classify an image once it is uploaded. -->
     <script type="text/javascript">
@@ -49,6 +49,15 @@
           );
         }
       );
+
+      function retrieve_classifier(index,filename) {
+        $.get("/result.json?c=" + index + "&f=" + filename, function(data){
+          $('#content_clf_' + data._id).html(data.html);
+          $('#timetaken_clf_' + data._id).html(data.timetaken);
+        }).fail(function(){
+          $('#content_clf_' + index).html("Failed.");
+        })
+      }
     </script>
 
     <style>

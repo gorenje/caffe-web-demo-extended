@@ -14,8 +14,8 @@ from PIL import Image
 import cStringIO as StringIO
 import urllib
 import exifutil
-
 import caffe
+import random, string
 
 REPO_DIRNAME = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + '/../..')
 WORKSPACE_DIRNAME = '/workspace'
@@ -29,14 +29,37 @@ app = flask.Flask(__name__)
 def index():
     return flask.render_template('index.html')
 
+@app.route('/wait.svg', methods=['GET'])
+def wait():
+    response = flask.make_response(flask.render_template('wait.svg'))
+    response.headers['Content-Type'] = 'image/svg+xml'
+    return response
+
+@app.route('/result.json', methods=['GET'])
+def result():
+    clfid = int(flask.request.args.get('c', 1)) - 1
+    image = exifutil.open_oriented_im(flask.request.args.get('f'))
+    result = app.clf[clfid].classify_image(image)
+    data = { 'html':
+             flask.render_template('_result.html', result=result,
+                                   cnt=clfid+1),
+             "timetaken": result[3],
+             "_id": clfid+1
+    }
+    return flask.jsonify(data)
 
 @app.route('/classify_url', methods=['GET'])
 def classify_url():
     imageurl = flask.request.args.get('imageurl', '')
     try:
-        string_buffer = StringIO.StringIO(
-            urllib.urlopen(imageurl).read())
-        image = caffe.io.load_image(string_buffer)
+        filename_ = str(datetime.datetime.now()).replace(' ', '_') + \
+                    werkzeug.secure_filename(randomword(10))
+        filename = os.path.join(UPLOAD_FOLDER, filename_)
+        f = open(filename, "w")
+        f.write(urllib.urlopen(imageurl).read())
+        f.close()
+        # image = caffe.io.load_image(string_buffer)
+        image = exifutil.open_oriented_im(filename)
 
     except Exception as err:
         # For any exception we encounter in reading the image, we will just
@@ -46,10 +69,9 @@ def classify_url():
             'error.html', error_msg='Cannot open image from URL.')
 
     logging.info('Image: %s', imageurl)
-    result = app.clf.classify_image(image)
-    result2 = app.clf2.classify_image(image)
-    return flask.render_template(
-        'results.html', results=[result,result2], imagesrc=imageurl)
+    return flask.render_template('results.html', classifiers=app.clf,
+                                 imagesrc=embed_image_html(image),
+                                 filename=filename)
 
 
 @app.route('/classify_upload', methods=['POST'])
@@ -61,7 +83,6 @@ def classify_upload():
             werkzeug.secure_filename(imagefile.filename)
         filename = os.path.join(UPLOAD_FOLDER, filename_)
         imagefile.save(filename)
-        logging.info('Saving to %s.', filename)
         image = exifutil.open_oriented_im(filename)
 
     except Exception as err:
@@ -69,11 +90,9 @@ def classify_upload():
         return flask.render_template(
             'error.html', error_msg='Cannot open uploaded image.')
 
-    result = app.clf.classify_image(image)
-    result2 = app.clf2.classify_image(image)
-    return flask.render_template(
-        'results.html', results=[result,result2],
-        imagesrc=embed_image_html(image))
+    return flask.render_template('results.html', classifiers=app.clf,
+                                 imagesrc=embed_image_html(image),
+                                 filename=filename)
 
 
 def embed_image_html(image):
@@ -92,6 +111,8 @@ def allowed_file(filename):
         filename.rsplit('.', 1)[1] in ALLOWED_IMAGE_EXTENSIONS
     )
 
+def randomword(length):
+   return ''.join(random.choice(string.lowercase) for i in range(length))
 
 class ImagenetClassifier(object):
     default_args = {
@@ -142,6 +163,9 @@ class ImagenetClassifier(object):
         # I am setting the value to 0.1 as a quick, simple model.
         # We could use better psychological models here...
         self.bet['infogain'] -= np.array(self.bet['preferences']) * 0.1
+
+    def name():
+        return self.name
 
     def classify_image(self, image):
         try:
@@ -201,8 +225,9 @@ def start_from_terminal(app):
     ImagenetClassifier.default_args.update({'gpu_mode': opts.gpu})
 
     # Initialize classifier + warm start by forward for allocation
-    app.clf = ImagenetClassifier(**ImagenetClassifier.default_args)
-    app.clf.net.forward()
+    app.clf = []
+    app.clf.append(ImagenetClassifier(**ImagenetClassifier.default_args))
+    app.clf[0].net.forward()
 
     clf_opts = dict(ImagenetClassifier.default_args)
     clf_opts.update({
@@ -211,8 +236,9 @@ def start_from_terminal(app):
         'pretrained_model_file': (
             '{}/VGG_ILSVRC_19_layers.caffemodel'.format(WORKSPACE_DIRNAME)),
     })
-    app.clf2 = ImagenetClassifier(**clf_opts)
-    app.clf2.net.forward()
+
+    app.clf.append(ImagenetClassifier(**clf_opts))
+    app.clf[1].net.forward()
 
     app.run(debug=False, host='0.0.0.0', port=opts.port)
 

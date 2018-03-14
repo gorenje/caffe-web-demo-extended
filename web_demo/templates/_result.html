@@ -1,0 +1,36 @@
+{% if result[0] %}
+  <div class="bs-example bs-example-tabs">
+    <ul id="myTab" class="nav nav-tabs">
+      <li class="active"><a href="#infopred{{cnt}}" data-toggle="tab">Maximally accurate</a></li>
+      <li><a href="#flatpred{{cnt}}" data-toggle="tab">Maximally specific</a></li>
+    </ul>
+    <div id="myTabContent" class="tab-content">
+      <div class="tab-pane fade in active" id="infopred{{cnt}}">
+        <ul class="list-group">
+          {% for single_pred in result[2] %}
+          <li class="list-group-item">
+            <span class="badge">{{ single_pred[1] }}</span>
+            <h4 class="list-group-item-heading">
+              <a href="https://www.google.com/#q={{ single_pred[0] }}" target="_blank">{{ single_pred[0] }}</a>
+            </h4>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="tab-pane fade" id="flatpred{{cnt}}">
+        <ul class="list-group">
+          {% for single_pred in result[1] %}
+          <li class="list-group-item">
+            <span class="badge">{{ single_pred[1] }}</span>
+            <h4 class="list-group-item-heading">
+              <a href="https://www.google.com/#q={{ single_pred[0] }}" target="_blank">{{ single_pred[0] }}</a>
+            </h4>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-danger">{{ result[1] }} Did you provide a valid URL or a valid image file? </div>
+{% endif %}
