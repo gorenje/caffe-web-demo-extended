@@ -1,23 +1,41 @@
+{% macro description() -%}
+  <div class="page-header">
+    <h1><a href="/">Caffe Demos</a></h1>
+    <p>
+      The <a href="http://caffe.berkeleyvision.org">Caffe</a> neural network library makes implementing state-of-the-art computer vision systems easy.
+    </p>
+  </div>
+
+  <div>
+    <h2>Classification</h2>
+    <a href="/classify_url?imageurl=http%3A%2F%2Fi.telegraph.co.uk%2Fmultimedia%2Farchive%2F02351%2Fcross-eyed-cat_2351472k.jpg">Click for a Quick Example</a>
+    More examples:
+    {% for cnt in [1,2,3,4,5,6,7,8] %}
+      <a href="/classify_url?imageurl=/images/image{{cnt}}.jpg">{{cnt}}</a>
+    {% endfor %}
+  </div>
+{%- endmacro %}
+
 {% macro form() -%}
-      <hr>
+  <hr>
 
-      <form role="form" action="classify_url" method="get">
-        <div class="form-group">
-          <div class="input-group">
-            <input type="text" class="form-control" name="imageurl" id="imageurl" placeholder="Provide an image URL">
-            <span class="input-group-btn">
-              <input class="btn btn-primary" value="Classify URL" type="submit" id="classifyurl"></input>
-            </span>
-          </div>
-        </div>
-      </form>
+  <form role="form" action="classify_url" method="get">
+    <div class="form-group">
+      <div class="input-group">
+        <input type="text" class="form-control" name="imageurl" id="imageurl" placeholder="Provide an image URL">
+        <span class="input-group-btn">
+          <input class="btn btn-primary" value="Classify URL" type="submit" id="classifyurl"></input>
+        </span>
+      </div>
+    </div>
+  </form>
 
-      <form id="formupload" class="form-inline" role="form" action="classify_upload" method="post" enctype="multipart/form-data">
-        <div class="form-group">
-          <label for="imagefile">Or upload an image:</label>
-          <input type="file" name="imagefile" id="imagefile">
-        </div>
-      </form>
+  <form id="formupload" class="form-inline" role="form" action="classify_upload" method="post" enctype="multipart/form-data">
+    <div class="form-group">
+      <label for="imagefile">Or upload an image:</label>
+      <input type="file" name="imagefile" id="imagefile">
+    </div>
+  </form>
 {%- endmacro %}
 
 <!DOCTYPE html>
@@ -83,7 +101,7 @@
     <hr>
     <div id="footer">
       <div class="container">
-        <p>&copy; BVLC 2014-2018</p>
+        <p>&copy; BVLC 2014</p>
       </div>
    </div>
   </body>

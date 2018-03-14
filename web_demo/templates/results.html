@@ -9,24 +9,14 @@
   <p> CNN took <span id="timetaken_clf_{{cnt}}"></span> seconds. </p>
   <script>
     $(document).ready(function(){
-      setTimeout(function(){retrieve_classifier({{cnt}},"{{filename}}")},100);
+      setTimeout(function(){retrieve_classifier({{cnt}},"{{filename}}")},300*{{cnt}});
     })
   </script>
 {%- endmacro %}
 
 {% block body %}
     <div class="container">
-      <div class="page-header">
-        <h1><a href="/">Caffe Demos</a></h1>
-        <p>
-          The <a href="http://caffe.berkeleyvision.org">Caffe</a> neural network library makes implementing state-of-the-art computer vision systems easy.
-        </p>
-      </div>
-
-      <div>
-        <h2>Classification</h2>
-        <a href="/classify_url?imageurl=http%3A%2F%2Fi.telegraph.co.uk%2Fmultimedia%2Farchive%2F02351%2Fcross-eyed-cat_2351472k.jpg">Click for a Quick Example</a>
-      </div>
+      {{ description() }}
 
       {% for clf in classifiers %}
         <div class="media">

@@ -27,6 +27,7 @@ app = flask.Flask(__name__)
 
 @app.route('/')
 def index():
+    global REPO_DIRNAME
     return flask.render_template('index.html')
 
 @app.route('/wait.svg', methods=['GET'])
@@ -43,22 +44,27 @@ def result():
     data = { 'html':
              flask.render_template('_result.html', result=result,
                                    cnt=clfid+1),
-             "timetaken": result[3],
              "_id": clfid+1
     }
+    if len(result) > 3:
+        data["timetaken"] = result[3]
     return flask.jsonify(data)
 
 @app.route('/classify_url', methods=['GET'])
 def classify_url():
     imageurl = flask.request.args.get('imageurl', '')
     try:
-        filename_ = str(datetime.datetime.now()).replace(' ', '_') + \
-                    werkzeug.secure_filename(randomword(10))
-        filename = os.path.join(UPLOAD_FOLDER, filename_)
-        f = open(filename, "w")
-        f.write(urllib.urlopen(imageurl).read())
-        f.close()
-        # image = caffe.io.load_image(string_buffer)
+        if imageurl.startswith("/images/"):
+            filename = os.path.dirname(os.path.abspath(__file__)) + imageurl
+            logging.info('Image: %s', filename)
+        else:
+            filename_ = str(datetime.datetime.now()).replace(' ', '_') + \
+                        werkzeug.secure_filename(randomword(10))
+            filename = os.path.join(UPLOAD_FOLDER, filename_)
+            f = open(filename, "w")
+            f.write(urllib.urlopen(imageurl).read())
+            f.close()
+
         image = exifutil.open_oriented_im(filename)
 
     except Exception as err:
@@ -116,10 +122,6 @@ def randomword(length):
 
 class ImagenetClassifier(object):
     default_args = {
-        'model_def_file': (
-            '{}/models/bvlc_reference_caffenet/deploy.prototxt'.format(REPO_DIRNAME)),
-        'pretrained_model_file': (
-            '{}/models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'.format(REPO_DIRNAME)),
         'mean_file': (
             '{}/python/caffe/imagenet/ilsvrc_2012_mean.npy'.format(REPO_DIRNAME)),
         'class_labels_file': (
@@ -201,7 +203,14 @@ class ImagenetClassifier(object):
         except Exception as err:
             logging.info('Classification error: %s', err)
             return (False, 'Something went wrong when classifying the '
-                           'image. Maybe try another one?')
+                           'image. Maybe try another one? ({})'.format(err))
+
+def start_tornado(app, port=5000):
+    http_server = tornado.httpserver.HTTPServer(
+        tornado.wsgi.WSGIContainer(app))
+    http_server.listen(port)
+    print("Tornado server starting on port {}".format(port))
+    tornado.ioloop.IOLoop.instance().start()
 
 def start_from_terminal(app):
     """
@@ -226,21 +235,51 @@ def start_from_terminal(app):
 
     # Initialize classifier + warm start by forward for allocation
     app.clf = []
-    app.clf.append(ImagenetClassifier(**ImagenetClassifier.default_args))
-    app.clf[0].net.forward()
-
     clf_opts = dict(ImagenetClassifier.default_args)
-    clf_opts.update({
-        'model_def_file': (
-            '{}/models/3785162f95cd2d5fee77/VGG_ILSVRC_19_layers_deploy.prototxt'.format(WORKSPACE_DIRNAME)),
-        'pretrained_model_file': (
-            '{}/VGG_ILSVRC_19_layers.caffemodel'.format(WORKSPACE_DIRNAME)),
-    })
 
-    app.clf.append(ImagenetClassifier(**clf_opts))
-    app.clf[1].net.forward()
+    # order these by how fast they are, the slowest classifiers should be
+    # at the bottom.
+    models = [
+        {
+            'model_def_file': (
+                '{}/models/bvlc_reference_caffenet/deploy.prototxt'.format(REPO_DIRNAME)),
+            'pretrained_model_file': (
+                '{}/models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'.format(REPO_DIRNAME))
+        },
+        {
+            'model_def_file': (
+                '{}/models/bvlc_googlenet/deploy.prototxt'.format(REPO_DIRNAME)),
+            'pretrained_model_file': (
+                '{}/models/bvlc_googlenet/bvlc_googlenet.caffemodel'.format(REPO_DIRNAME))
+        },
+        {
+            'model_def_file': (
+                '{}/models/finetune_flickr_style/deploy.prototxt'.format(REPO_DIRNAME)),
+            'pretrained_model_file': (
+                '{}/models/finetune_flickr_style/finetune_flickr_style.caffemodel'.format(REPO_DIRNAME))
+        },
+        {
+            'model_def_file': (
+                '{}/models/78047f3591446d1d7b91/VGG_CNN_M_2048_deploy.prototxt'.format(WORKSPACE_DIRNAME)),
+            'pretrained_model_file': (
+                '{}/VGG_CNN_M_2048.caffemodel'.format(WORKSPACE_DIRNAME)),
+        },
+        {
+            'model_def_file': (
+                '{}/models/3785162f95cd2d5fee77/VGG_ILSVRC_19_layers_deploy.prototxt'.format(WORKSPACE_DIRNAME)),
+            'pretrained_model_file': (
+                '{}/VGG_ILSVRC_19_layers.caffemodel'.format(WORKSPACE_DIRNAME)),
+        },
+    ]
 
-    app.run(debug=False, host='0.0.0.0', port=opts.port)
+    for model in models:
+        clf_opts.update(model)
+        app.clf.append(ImagenetClassifier(**clf_opts))
+
+    if opts.debug:
+        app.run(debug=False, host='0.0.0.0', port=opts.port)
+    else:
+        start_tornado(app, opts.port)
 
 
 if __name__ == '__main__':
