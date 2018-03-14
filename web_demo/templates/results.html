@@ -1,0 +1,69 @@
+{% extends "layout.html" %}
+
+{% macro show_results(result, imagesrc, cnt) -%}
+  <h2>{{ result[4] }}</h2>
+  {% if result[0] %}
+    <a class="pull-left" href="#"><img class="media-object" width="192" height="192" src={{ imagesrc }}></a>
+    <div class="media-body">
+      <div class="bs-example bs-example-tabs">
+        <ul id="myTab" class="nav nav-tabs">
+          <li class="active"><a href="#infopred{{cnt}}" data-toggle="tab">Maximally accurate</a></li>
+          <li><a href="#flatpred{{cnt}}" data-toggle="tab">Maximally specific</a></li>
+        </ul>
+        <div id="myTabContent" class="tab-content">
+          <div class="tab-pane fade in active" id="infopred{{cnt}}">
+            <ul class="list-group">
+              {% for single_pred in result[2] %}
+              <li class="list-group-item">
+                <span class="badge">{{ single_pred[1] }}</span>
+                <h4 class="list-group-item-heading">
+                  <a href="https://www.google.com/#q={{ single_pred[0] }}" target="_blank">{{ single_pred[0] }}</a>
+                </h4>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="tab-pane fade" id="flatpred{{cnt}}">
+            <ul class="list-group">
+              {% for single_pred in result[1] %}
+              <li class="list-group-item">
+                <span class="badge">{{ single_pred[1] }}</span>
+                <h4 class="list-group-item-heading">
+                  <a href="https://www.google.com/#q={{ single_pred[0] }}" target="_blank">{{ single_pred[0] }}</a>
+                </h4>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p> CNN took {{ result[3] }} seconds. </p>
+  {% else %}
+    <div class="alert alert-danger">{{ result[1] }} Did you provide a valid URL or a valid image file? </div>
+  {% endif %}
+{%- endmacro %}
+
+{% block body %}
+    <div class="container">
+      <div class="page-header">
+        <h1><a href="/">Caffe Demos</a></h1>
+        <p>
+          The <a href="http://caffe.berkeleyvision.org">Caffe</a> neural network library makes implementing state-of-the-art computer vision systems easy.
+        </p>
+      </div>
+
+      <div>
+        <h2>Classification</h2>
+        <a href="/classify_url?imageurl=http%3A%2F%2Fi.telegraph.co.uk%2Fmultimedia%2Farchive%2F02351%2Fcross-eyed-cat_2351472k.jpg">Click for a Quick Example</a>
+      </div>
+
+      <div class="media">
+        {% for result in results %}
+          {{ show_results(result, imagesrc, loop.index) }}
+        {% endfor %}
+      </div>
+
+      {{ form() }}
+    </div>
+{% endblock %}
